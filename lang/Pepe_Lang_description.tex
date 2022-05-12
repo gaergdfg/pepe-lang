@@ -1,0 +1,41 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[left=2cm, right=2cm, top=2cm]{geometry}
+\usepackage{amsmath}
+
+
+\begin{document}
+
+
+Piotr Prabucki, 418377
+
+
+\vspace{0.2cm}
+\begin{center}
+\vspace{1mm}
+ \Large \textbf{Pepe lang}
+\vspace{0.7cm}
+\end{center}
+
+
+\noindent
+Pepe lang jest nieco rozszerzoną wersją języka Latte.
+
+\begin{itemize}
+    \item Trzy typy wartości: $int$, $bool$ i $string$.
+    \item Literały, arytmetyka, porównania oraz zmienne i operacja przypisania jak w Latte.
+    \item Jawne wypisywanie wartości na wyjście za pomocą funkcji $printInt$, $printBool$ i $printString$ dla odpowiednich typów.
+    \item Bloki instrukcji konsturkcji $while$, $if$ z (i bez) $else$ muszą być otoczone nawiasami
+        $$ while \; \text{( warunek )} \; \text{\{ instr \}} $$
+        $$ if \; \text{( warunek )} \; \text{\{ instr \}} $$
+        $$ if \; \text{( warunek )} \; \text{\{ instr \}} \; else \; \text{\{ instr \}}$$
+    \item Operacje przerywające pętlę $while$ -- $break$ i $continue$.
+    \item Funkcje przyjmujące i zwracające wartość dowolnych obsługiwanych typów, dostępna rekurencja oraz zagnieżdżanie funkcji.
+    \item Przekazywanie parametrów przez zmienną oraz przez wartość.
+    \item Obsługa błędów wykonania.
+    \item Statyczne typowanie.
+\end{itemize}
+
+
+\end{document}
