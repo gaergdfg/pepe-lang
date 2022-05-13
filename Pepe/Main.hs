@@ -15,5 +15,3 @@ main = do
         _ -> do
             putStrLn "Invalid number of arguments! Run with arguments: (filepath)."
             exitFailure
-
--- ghc --make Pepe/Main.hs -o interpreter
