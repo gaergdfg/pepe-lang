@@ -65,7 +65,8 @@ Program :: { (Program ()) }
 Program : ListTopDef { Pepe.Abs.PProgram () $1 }
 TopDef :: { (TopDef ()) }
 TopDef : Type Ident '(' ListArg ')' Block { Pepe.Abs.PFnDef () $1 $2 $4 $6 }
-       | Type Ident '=' Expr ';' { Pepe.Abs.PVarDef () $1 $2 $4 }
+       | Type Ident '=' Expr ';' { Pepe.Abs.PVarInit () $1 $2 $4 }
+       | Type Ident ';' { Pepe.Abs.PVarDef () $1 $2 }
 ListTopDef :: { [TopDef ()] }
 ListTopDef : TopDef { (:[]) $1 } | TopDef ListTopDef { (:) $1 $2 }
 Arg :: { (Arg ()) }
@@ -81,7 +82,6 @@ Stmt :: { (Stmt ()) }
 Stmt : ';' { Pepe.Abs.SEmpty () }
      | Block { Pepe.Abs.SBStmt () $1 }
      | TopDef { Pepe.Abs.STopDef () $1 }
-     | Type ListItem ';' { Pepe.Abs.SDecl () $1 $2 }
      | Ident '=' Expr ';' { Pepe.Abs.SAss () $1 $3 }
      | Ident '++' ';' { Pepe.Abs.SIncr () $1 }
      | Ident '--' ';' { Pepe.Abs.SDecr () $1 }
@@ -93,11 +93,6 @@ Stmt : ';' { Pepe.Abs.SEmpty () }
      | 'break' ';' { Pepe.Abs.SBreak () }
      | 'continue' ';' { Pepe.Abs.SCont () }
      | Expr ';' { Pepe.Abs.SExp () $1 }
-Item :: { (Item ()) }
-Item : Ident { Pepe.Abs.SNoInit () $1 }
-     | Ident '=' Expr { Pepe.Abs.SInit () $1 $3 }
-ListItem :: { [Item ()] }
-ListItem : Item { (:[]) $1 } | Item ',' ListItem { (:) $1 $3 }
 ListStmt :: { [Stmt ()] }
 ListStmt : {- empty -} { [] } | ListStmt Stmt { flip (:) $1 $2 }
 Type :: { (Type ()) }
@@ -169,3 +164,4 @@ happyError ts =
 
 myLexer = tokens
 }
+

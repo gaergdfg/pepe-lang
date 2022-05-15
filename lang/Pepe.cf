@@ -6,7 +6,9 @@ PProgram.   Program ::= [TopDef] ;
 
 PFnDef.     TopDef ::= Type Ident "(" [Arg] ")" Block ;
 
-PVarDef.    TopDef ::= Type Ident "=" Expr ";" ;
+PVarInit.   TopDef ::= Type Ident "=" Expr ";" ;
+
+PVarDef.    TopDef ::= Type Ident ";" ;
 
 separator nonempty TopDef "" ;
 
@@ -26,14 +28,6 @@ SEmpty.     Stmt ::= ";" ;
 SBStmt.     Stmt ::= Block ;
 
 STopDef.    Stmt ::= TopDef ;
-
-SDecl.      Stmt ::= Type [Item] ";" ;
-
-SNoInit.    Item ::= Ident ;
-
-SInit.      Item ::= Ident "=" Expr ;
-
-separator nonempty Item "," ;
 
 SAss.       Stmt ::= Ident "=" Expr ";" ;
 
