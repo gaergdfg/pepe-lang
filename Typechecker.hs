@@ -140,13 +140,7 @@ instance Typechecker (Program a) where
         ensureNoDuplicateIdentsP pos defs
         mapM_ (checkType Nothing) defs
 
-        env <- get
-
-        case M.lookup (Ident "main") env of
-            Nothing -> throwError $ MainNotFoundException ()
-            (Just (RTFunc [] RTInt)) -> pure ()
-            (Just rawType) ->
-                throwError $ TypeMismatchException () (RTFunc [] RTInt) rawType
+        ensureVarIsOfTypeTC pos (Ident "main") (RTFunc [] RTInt)
 
 
 instance Typechecker (TopDef a) where
