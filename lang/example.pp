@@ -6,7 +6,7 @@ void greet() {
 
 int a(int x) {
 	int b(int val) {
-		return 2 * value;
+		return 2 * val;
 	}
 
 	return b(x);
@@ -35,7 +35,9 @@ void main() {
 	printBool(x > 3 - 1);
 	printBool(2 * 2 < 3 / 1);
 
-	int i = 0, n = 10, dummy;
+	int i = 0;
+	int n = 10;
+	int dummy;
 	while (i < n) {
 		printInt(a(i));
 		i++;
