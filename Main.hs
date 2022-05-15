@@ -3,7 +3,7 @@ module Main where
 import           System.Environment (getArgs)
 import           System.Exit        (exitFailure)
 
-import           Pepe.Interpreter   (interpretFile)
+import           Interpreter        (interpretFile)
 
 
 main :: IO ()
