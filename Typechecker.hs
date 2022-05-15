@@ -8,7 +8,7 @@ import           Control.Monad.Reader   (MonadReader (ask),
                                          ReaderT (runReaderT))
 import           Control.Monad.State    (MonadState (get, put), StateT,
                                          evalStateT)
-import           Data.List              (nub, (\\))
+import           Data.List              (intercalate, nub, (\\))
 
 import           Pepe.Abs               (Arg (..), Block (..), Expr (..),
                                          Ident (..), Program (..), Stmt (..),
@@ -72,9 +72,9 @@ instance Show TypecheckException where
         concat
         [ "Error - invalid function call argument types!"
         , "\nExpected: ["
-        , concatMap show expectedTypes
+        , intercalate ", " $ map show expectedTypes
         , "]\nGot: ["
-        , concatMap show realTypes
+        , intercalate ", " $ map show realTypes
         , "]"
         ]
 

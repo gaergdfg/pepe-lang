@@ -5,3 +5,7 @@
 
 # Ignore editor config files
 .vscode
+
+# Others
+*.hi
+*.o
