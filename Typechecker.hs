@@ -29,15 +29,21 @@ data RawType
 
 instance Show RawType where
 
-    show RTBool        = "bool"
+    show RTBool   = "bool"
 
-    show RTInt         = "int"
+    show RTInt    = "int"
 
-    show RTString      = "string"
+    show RTString = "string"
 
-    show RTVoid        = "void"
+    show RTVoid   = "void"
 
-    show (RTFunc _  _) = undefined
+    show (RTFunc argTypes resType) =
+        concat
+        [ "Function ["
+        , intercalate ", " $ map show argTypes
+        , "] -> "
+        , show resType
+        ]
 
 
 getRawType :: Type a -> RawType
@@ -136,10 +142,11 @@ instance Typechecker (Program a) where
 
         env <- get
 
-        let sigs = M.toList env
-        let f (Ident name) = name
-        let ids = map (f . fst) sigs
-        assertTC ("main" `elem` ids) $ MainNotFoundException ()
+        case M.lookup (Ident "main") env of
+            Nothing -> throwError $ MainNotFoundException ()
+            (Just (RTFunc [] RTInt)) -> pure ()
+            (Just rawType) ->
+                throwError $ TypeMismatchException () (RTFunc [] RTInt) rawType
 
 
 instance Typechecker (TopDef a) where
