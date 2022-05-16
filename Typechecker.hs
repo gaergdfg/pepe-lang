@@ -104,13 +104,13 @@ instance Show TypecheckException where
         concat
         [ "Error - redefinition of: "
         , show name
-        , ", at: "
+        , ", in the context starting at: "
         , showPos pos
         ]
 
     show (TypeMismatchException pos expectedType realType) =
         concat
-        [ "Error - type mismatch at:"
+        [ "Error - type mismatch at: "
         , showPos pos
         , "\nExpected: "
         , show expectedType
