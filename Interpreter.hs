@@ -1,8 +1,10 @@
 module Interpreter (interpretFile) where
 
-import           System.Exit (exitFailure, exitSuccess)
+import           System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess,
+                              exitWith)
 import           System.IO   (hPrint, stderr)
 
+import           Evaluator   (Value (VInt), evaluate)
 import           Pepe.Par    (myLexer, pProgram)
 import           Typechecker (typecheck)
 
@@ -17,8 +19,14 @@ interpretFile filepath = do
             case typecheck program of
               Left err -> exitWithError err
               Right _  -> do
-                -- evaluate
-                exitSuccess
+                result <- evaluate program
+                case result of
+                    Left err -> exitWithError err
+                    Right (VInt value) ->
+                        if value == 0
+                        then exitSuccess
+                        else exitWith (ExitFailure (fromIntegral value))
+                    Right _ -> exitWithError "Unexpected return type"
 
 
 exitWithError :: Show a => a -> IO ()
