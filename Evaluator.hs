@@ -25,7 +25,7 @@ data Value
     | VInt Integer
     | VString String
     | VVoid
-    | VFunc [Arg] Block
+    | VFunc [Arg] Block Env'
     | None
     deriving (Eq)
 
@@ -129,7 +129,9 @@ printEnv = do
 instance Evaluator TopDef where
 
     eval (PFnDef _ _ name args block) = do
-        modify $ updateEnv name $ VFunc args block
+        env <- get
+
+        modify $ updateEnv name $ VFunc args block $ getEnv env
 
         pure None
 
@@ -338,12 +340,14 @@ evalFuncApp callPos name argVals = do
     env <- get
     let vars = getEnv env
 
-    let (VFunc fArgs fBlock@(SBlock pos _)) = getVarValue name env
+    let func@(VFunc fArgs fBlock@(SBlock pos _) fEnv) = getVarValue name env
     let argIds = map getArgId fArgs
 
+    modify $ insertEnv fEnv
+    insertNameVal (name, func)
     mapM_ insertNameVal (zip argIds argVals)
-
     modify $ updateRetVal None
+
     eval fBlock
 
     env' <- get
@@ -372,6 +376,12 @@ insertNameVal (name, val) = do
     modify $ updateEnv name val
 
     pure None
+
+insertEnv :: Env' -> Env -> Env
+insertEnv env Env{..} = Env
+    { env_ = env
+    , retVal = retVal
+    }
 
 
 -- Entrypoint ----------------------------------------------------------------------------

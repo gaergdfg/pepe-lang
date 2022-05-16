@@ -1,15 +1,17 @@
-int f(int a, int b) {
-	if (a != b) {
-        a++;
-        b = f(a, b);
+int f(int x) {
+    int g(int y) {
+        return x + y;
     }
 
-	return a + b;
+    int i = 0;
+    while (i < 10) {
+        int x = 69;
+        return g(17);
+    }
 }
 
 int main() {
-	int b = 5;
-	int a = f(2, 5);
-	
-	return a;
+	printInt(f(10));
+
+    return 0;
 }
