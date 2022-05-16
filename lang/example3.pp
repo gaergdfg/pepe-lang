@@ -11,7 +11,7 @@ bool z2 = (true || false) && (!false || true);
 /*
 int a = 2;
 int f(int a, int b) {
-    int f2() {
+    int f2(int a) {
         int a = 3;
 
         return a;
@@ -44,11 +44,14 @@ int main() {
     // b++; // error
     int temp = 1;
     temp = temp + f(2);
+    printInt(temp);
 
     // x++; // error
     // y++; // error
     // printString(s); // error
     // g(1, 2); // error
+
+    // no-return error
 }
 
 // ========================================================================================

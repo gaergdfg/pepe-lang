@@ -12,12 +12,13 @@ ALEX_OPTS  = --ghc
 
 # Default goal.
 
-all : interpreter
+all :
+	ghc --make Main.hs -o interpreter
 
 # Rules for building the parser.
 
-Pepe/Abs.hs Pepe/Lex.x Pepe/Par.y Pepe/Print.hs Pepe/Test.hs : lang/Pepe.cf
-	bnfc --haskell -d --functor lang/Pepe.cf
+# Pepe/Abs.hs Pepe/Lex.x Pepe/Par.y Pepe/Print.hs Pepe/Test.hs : lang/Pepe.cf
+# 	bnfc --haskell -d --functor lang/Pepe.cf
 
 %.hs : %.y
 	${HAPPY} ${HAPPY_OPTS} $<
@@ -27,9 +28,6 @@ Pepe/Abs.hs Pepe/Lex.x Pepe/Par.y Pepe/Print.hs Pepe/Test.hs : lang/Pepe.cf
 
 Pepe/Test : Pepe/Abs.hs Pepe/Lex.hs Pepe/Par.hs Pepe/Print.hs Pepe/Test.hs
 	${GHC} ${GHC_OPTS} $@
-
-interpreter: Pepe/Abs.hs Pepe/Lex.hs Pepe/Par.hs Pepe/Print.hs Pepe/Test.hs
-	${GHC} ${GHC_OPTS} Main.hs -o interpreter
 
 # Rules for cleaning generated files.
 
