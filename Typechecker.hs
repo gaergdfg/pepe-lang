@@ -10,9 +10,11 @@ import           Control.Monad.State    (MonadState (get, put), StateT,
                                          evalStateT)
 import           Data.List              (intercalate, nub, (\\))
 
-import           Pepe.Abs               (Arg (..), Block (..), Expr (..),
-                                         Ident (..), Program (..), Stmt (..),
-                                         TopDef (..), Type (..))
+import           Pepe.Abs               (Arg, Arg' (..), BNFC'Position, Block,
+                                         Block' (..), Expr, Expr' (..),
+                                         Ident (..), Program, Program' (..),
+                                         Stmt, Stmt' (..), TopDef, TopDef' (..),
+                                         Type, Type' (..), showPos)
 import           Pepe.ErrM              ()
 
 import qualified Data.Map               as M
@@ -46,7 +48,7 @@ instance Show RawType where
         ]
 
 
-getRawType :: Type a -> RawType
+getRawType :: Type -> RawType
 getRawType (TBool _)   = RTBool
 getRawType (TInt _ )   = RTInt
 getRawType (TString _) = RTString
@@ -54,13 +56,12 @@ getRawType (TVoid _ )  = RTVoid
 
 
 -- Exceptions ----------------------------------------------------------------------------
-type TypecheckException = TypecheckException' ()
+type TypecheckException = TypecheckException' BNFC'Position
 
 data TypecheckException' a
     = UnimplementedException a String
     | InvalidCallException a RawType
-    | InvalidFunctionArgTypesException a [RawType] [RawType]
-    | MainNotFoundException a
+    | InvalidFunctionArgTypesException a Ident [RawType] [RawType]
     | RedefinitionException a Ident
     | TypeMismatchException a RawType RawType
     | UnexpectedReturnException a
@@ -69,14 +70,29 @@ data TypecheckException' a
 
 instance Show TypecheckException where
 
-    show (UnimplementedException pos msg) = "Error - unimplemented functionality! " ++ msg
+    show (UnimplementedException pos msg) =
+        concat
+        [ "Error - unimplemented functionality! "
+        , msg
+        , ", at :"
+        , showPos pos
+        ]
 
     show (InvalidCallException pos rawType) =
-        "Error - invalid attempt to call a variable of type: " ++ show rawType
+        concat
+        [ "Error - invalid attempt to call a variable of type: "
+        , show rawType
+        , " at: "
+        , showPos pos
+        ]
 
-    show (InvalidFunctionArgTypesException pos expectedTypes realTypes) =
+    show (InvalidFunctionArgTypesException pos name expectedTypes realTypes) =
         concat
         [ "Error - invalid function call argument types!"
+        , " Tried calling "
+        , show name
+        , ", at: "
+        , showPos pos
         , "\nExpected: ["
         , intercalate ", " $ map show expectedTypes
         , "]\nGot: ["
@@ -84,22 +100,34 @@ instance Show TypecheckException where
         , "]"
         ]
 
-    show (MainNotFoundException pos) = "Error - function 'main' not found!"
-
-    show (RedefinitionException pos name) = "Error - redefinition of: " ++ show name
+    show (RedefinitionException pos name) =
+        concat
+        [ "Error - redefinition of: "
+        , show name
+        , ", at: "
+        , showPos pos
+        ]
 
     show (TypeMismatchException pos expectedType realType) =
         concat
-        [ "Error - type mismatch!"
+        [ "Error - type mismatch at:"
+        , showPos pos
         , "\nExpected: "
         , show expectedType
         , "\nGot: "
         , show realType
         ]
 
-    show (UnexpectedReturnException pos) = "Error - unexpected return statement!"
+    show (UnexpectedReturnException pos) =
+        "Error - unexpected return statement at: " ++ showPos pos
 
-    show (UndefinedSymbolException pos name) = "Error - undefined symbol: " ++ show name
+    show (UndefinedSymbolException pos name) =
+        concat
+        [ "Error - undefined symbol: "
+        , show name
+        , " at: "
+        , showPos pos
+        ]
 
 
 -- Environment ---------------------------------------------------------------------------
@@ -134,16 +162,16 @@ class Typegetter a where
 
 
 -- Logic ---------------------------------------------------------------------------------
-instance Typechecker (Program a) where
+instance Typechecker Program where
 
     checkType _ (PProgram pos defs) = do
         ensureNoDuplicateIdentsP pos defs
         mapM_ (checkType Nothing) defs
 
-        ensureVarIsOfTypeTC pos (Ident "main") (RTFunc [] RTInt)
+        ensureVarIsOfTypeTC (Just (0, 0)) (Ident "main") (RTFunc [] RTInt)
 
 
-instance Typechecker (TopDef a) where
+instance Typechecker TopDef where
 
     checkType _ (PFnDef pos resType name args block@(SBlock _ stmts)) = do
         ensureNoDuplicateIdentsF pos args stmts
@@ -167,7 +195,7 @@ instance Typechecker (TopDef a) where
 
         let rawVarType = getRawType varType
         let rawExprType = resolveType pos env expr
-        assertMaybeTypeMatchesTC rawVarType rawExprType
+        assertMaybeTypeMatchesTC pos rawVarType rawExprType
 
         put $ insertType env name rawVarType
 
@@ -179,13 +207,13 @@ instance Typechecker (TopDef a) where
         put $ insertType env name rawVarType
 
 
-instance Typechecker (Block a) where
+instance Typechecker Block where
 
     checkType expectedType (SBlock pos stmts) = do
         mapM_ (checkType expectedType) stmts
 
 
-instance Typechecker (Stmt a) where
+instance Typechecker Stmt where
 
     checkType _ (SEmpty _) = pure ()
 
@@ -202,8 +230,9 @@ instance Typechecker (Stmt a) where
         env <- get
 
         case M.lookup name env of
-            Nothing      -> throwError $ UndefinedSymbolException () name
-            Just rawType -> assertMaybeTypeMatchesTC rawType $ resolveType pos env expr
+            Nothing      -> throwError $ UndefinedSymbolException pos name
+            Just rawType ->
+                assertMaybeTypeMatchesTC pos rawType $ resolveType pos env expr
 
     checkType _ (SIncr pos name) = ensureVarIsOfTypeTC pos name RTInt
 
@@ -212,36 +241,37 @@ instance Typechecker (Stmt a) where
     checkType (Just expectedType) (SRet pos expr) = do
         env <- get
 
-        assertMaybeTypeMatchesTC expectedType $ resolveType pos env expr
+        assertMaybeTypeMatchesTC pos expectedType $ resolveType pos env expr
 
-    checkType Nothing (SRet pos _) = throwError $ UnexpectedReturnException ()
+    checkType Nothing (SRet pos _) = throwError $ UnexpectedReturnException pos
 
-    checkType (Just expectedType) (SRetVoid pos) = assertTypesMatchTC RTVoid expectedType
+    checkType (Just expectedType) (SRetVoid pos) =
+        assertTypesMatchTC pos RTVoid expectedType
 
-    checkType Nothing (SRetVoid pos) = throwError $ UnexpectedReturnException ()
+    checkType Nothing (SRetVoid pos) = throwError $ UnexpectedReturnException pos
 
     checkType expectedType (SCond pos cond block) = do
         env <- get
 
-        assertMaybeTypeMatchesTC RTBool $ resolveType pos env cond
+        assertMaybeTypeMatchesTC pos RTBool $ resolveType pos env cond
         checkType expectedType block
 
     checkType expectedType (SCondElse pos cond blockTrue blockFalse) = do
         env <- get
 
-        assertMaybeTypeMatchesTC RTBool $ resolveType pos env cond
+        assertMaybeTypeMatchesTC pos RTBool $ resolveType pos env cond
         checkType expectedType blockTrue
         checkType expectedType blockFalse
 
     checkType expectedType (SWhile pos cond block) = do
         env <- get
 
-        assertMaybeTypeMatchesTC RTBool $ resolveType pos env cond
+        assertMaybeTypeMatchesTC pos RTBool $ resolveType pos env cond
         checkType expectedType block
 
-    checkType _ (SBreak pos) = throwError $ UnimplementedException () "Break"
+    checkType _ (SBreak pos) = throwError $ UnimplementedException pos "Break"
 
-    checkType _ (SCont pos) = throwError $ UnimplementedException () "Continue"
+    checkType _ (SCont pos) = throwError $ UnimplementedException pos "Continue"
 
     checkType _ (SExp pos expr) = do
         env <- get
@@ -251,13 +281,13 @@ instance Typechecker (Stmt a) where
           Right _    -> pure ()
 
 
-instance Typegetter (Expr a) where
+instance Typegetter Expr where
 
     getType (EVar pos name) = do
         env <- ask
 
         case M.lookup name env of
-            Nothing        -> throwError $ UndefinedSymbolException () name
+            Nothing        -> throwError $ UndefinedSymbolException pos name
             (Just rawType) -> pure rawType
 
     getType (ELitInt pos _) = pure RTInt
@@ -270,14 +300,14 @@ instance Typegetter (Expr a) where
         env <- ask
 
         case M.lookup name env of
-            Nothing -> throwError $ UndefinedSymbolException () name
+            Nothing -> throwError $ UndefinedSymbolException pos name
             Just rawType@(RTFunc argTypes resType) -> do
                 rawArgTypes <- mapM getType args
                 assertTG
                     (argTypes == rawArgTypes)
-                    $ InvalidFunctionArgTypesException () argTypes rawArgTypes
+                    $ InvalidFunctionArgTypesException pos name argTypes rawArgTypes
                 pure resType
-            Just rawType -> throwError $ InvalidCallException () rawType
+            Just rawType -> throwError $ InvalidCallException pos rawType
 
     getType (EString pos _) = pure RTString
 
@@ -324,36 +354,38 @@ assertTC :: Bool -> TypecheckException -> TypecheckerM
 assertTC True _          = pure ()
 assertTC False exception = throwError exception
 
-assertTypesMatchTC :: RawType -> RawType -> TypecheckerM
-assertTypesMatchTC expectedType realType = assertTC
+assertTypesMatchTC :: BNFC'Position -> RawType -> RawType -> TypecheckerM
+assertTypesMatchTC pos expectedType realType = assertTC
     (expectedType == realType)
-    (TypeMismatchException () expectedType realType)
+    (TypeMismatchException pos expectedType realType)
 
-assertMaybeTypeMatchesTC :: RawType -> Either TypecheckException RawType -> TypecheckerM
-assertMaybeTypeMatchesTC _ (Left exception) = throwError exception
-assertMaybeTypeMatchesTC expectedType (Right realType) =
-    assertTypesMatchTC expectedType realType
+assertMaybeTypeMatchesTC ::
+    BNFC'Position -> RawType -> Either TypecheckException RawType -> TypecheckerM
+assertMaybeTypeMatchesTC _ _ (Left exception) = throwError exception
+assertMaybeTypeMatchesTC pos expectedType (Right realType) =
+    assertTypesMatchTC pos expectedType realType
 
-ensureVarIsOfTypeTC :: a -> Ident -> RawType -> TypecheckerM
+ensureVarIsOfTypeTC :: BNFC'Position -> Ident -> RawType -> TypecheckerM
 ensureVarIsOfTypeTC pos name expectedType = do
     env <- get
 
     case M.lookup name env of
-        Nothing      -> throwError $ UndefinedSymbolException () name
-        Just rawType -> assertTypesMatchTC expectedType rawType
+        Nothing      -> throwError $ UndefinedSymbolException pos name
+        Just rawType -> assertTypesMatchTC pos expectedType rawType
 
 -- typegetter --
 assertTG :: Bool -> TypecheckException -> TypegetterNullM
 assertTG True _          = pure ()
 assertTG False exception = throwError exception
 
-assertTypesMatchTG :: a -> RawType -> Either TypecheckException RawType -> TypegetterNullM
+assertTypesMatchTG ::
+    BNFC'Position -> RawType -> Either TypecheckException RawType -> TypegetterNullM
 assertTypesMatchTG _ _ (Left exception) = throwError exception
 assertTypesMatchTG pos expectedType (Right realType) = assertTG
     (expectedType == realType)
-    (TypeMismatchException () expectedType realType)
+    (TypeMismatchException pos expectedType realType)
 
-ensureExprType :: Typegetter a => b -> RawType -> a -> TypegetterNullM
+ensureExprType :: Typegetter a => BNFC'Position -> RawType -> a -> TypegetterNullM
 ensureExprType pos expectedType expr = do
     env <- ask
 
@@ -361,7 +393,7 @@ ensureExprType pos expectedType expr = do
 
     assertTypesMatchTG pos expectedType realType
 
-ensureExprTypes :: Typegetter a => b -> RawType -> a -> a -> TypegetterNullM
+ensureExprTypes :: Typegetter a => BNFC'Position -> RawType -> a -> a -> TypegetterNullM
 ensureExprTypes pos expectedType expr1 expr2 = do
     env <- ask
 
@@ -371,7 +403,7 @@ ensureExprTypes pos expectedType expr1 expr2 = do
     assertTypesMatchTG pos expectedType realType1
     assertTypesMatchTG pos expectedType realType2
 
-getArgTypeName :: Arg a -> (Ident, RawType)
+getArgTypeName :: Arg -> (Ident, RawType)
 getArgTypeName (PArg _ aType name)    = (name, getRawType aType)
 getArgTypeName (PRefArg _ aType name) = (name, getRawType aType)
 
@@ -385,27 +417,27 @@ insertTypes :: Env -> [(Ident, RawType)] -> Env
 insertTypes = foldl insertTypePair
 
 -- duplicate declarations --
-ensureNoDuplicateIdentsP :: a -> [TopDef a] -> TypecheckerM
+ensureNoDuplicateIdentsP :: BNFC'Position -> [TopDef] -> TypecheckerM
 ensureNoDuplicateIdentsP pos defs =
     ensureNoDuplicateIdents pos $ map getTopDefId defs
 
-ensureNoDuplicateIdentsF :: a -> [Arg a] -> [Stmt a] -> TypecheckerM
+ensureNoDuplicateIdentsF :: BNFC'Position -> [Arg] -> [Stmt] -> TypecheckerM
 ensureNoDuplicateIdentsF pos args block =
-    ensureNoDuplicateIdents () $ argIds ++ blockIds
+    ensureNoDuplicateIdents pos $ argIds ++ blockIds
     where
         argIds = map getArgId args
         blockIds = extractDefs block
 
-extractDefs :: [Stmt a] -> [Ident]
+extractDefs :: [Stmt] -> [Ident]
 extractDefs block = filter f list
     where
         f = \id -> id /= Ident ""
         list = foldr extractDefsAcc [] block
 
-extractDefsAcc :: Stmt a -> [Ident] -> [Ident]
+extractDefsAcc :: Stmt -> [Ident] -> [Ident]
 extractDefsAcc stmt acc  = extractDef stmt : acc
 
-extractDef :: Stmt a -> Ident
+extractDef :: Stmt -> Ident
 extractDef (STopDef _ def) = case def of
     (PFnDef _ _ name _ __) -> name
     (PVarInit _ _ name _ ) -> name
@@ -413,27 +445,27 @@ extractDef (STopDef _ def) = case def of
 extractDef _ = Ident ""
 
 
-ensureNoDuplicateIdents :: a -> [Ident] -> TypecheckerM
+ensureNoDuplicateIdents :: BNFC'Position -> [Ident] -> TypecheckerM
 ensureNoDuplicateIdents pos list =
     if null duplicates
     then pure ()
-    else throwError $ RedefinitionException () $ head duplicates
+    else throwError $ RedefinitionException pos $ head duplicates
     where
         noDupList = nub list
         duplicates = list \\ noDupList
 
-getTopDefId :: TopDef a -> Ident
+getTopDefId :: TopDef -> Ident
 getTopDefId (PFnDef _ _ name _ _) = name
 getTopDefId (PVarInit _ _ name _) = name
 getTopDefId (PVarDef _ _ name)    = name
 
-getArgId :: Arg a -> Ident
+getArgId :: Arg -> Ident
 getArgId (PArg _  _ name)   = name
 getArgId (PRefArg _ _ name) = name
 
 
 -- Entrypoint ----------------------------------------------------------------------------
-typecheck :: Program a -> Either TypecheckException ()
+typecheck :: Program -> Either TypecheckException ()
 typecheck program = run
     where
         typecheckCall = checkType Nothing program

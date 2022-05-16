@@ -26,7 +26,7 @@ void inc(ref int val) {
 	return;
 }
 
-void main() {
+int main() {
 	greet();
 
 	int x;
@@ -49,5 +49,5 @@ void main() {
 	inc(y);
 	printInt(y);
 
-	return;
+	return 0;
 }

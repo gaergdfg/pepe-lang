@@ -4,25 +4,19 @@
 
 module Main where
 
-import Prelude
-  ( ($), (.)
-  , Either(..)
-  , Int, (>)
-  , String, (++), concat, unlines
-  , Show, show
-  , IO, (>>), (>>=), mapM_, putStrLn
-  , FilePath
-  , getContents, readFile
-  )
-import System.Environment ( getArgs )
-import System.Exit        ( exitFailure )
-import Control.Monad      ( when )
+import           Control.Monad      (when)
+import           Prelude            (Either (..), FilePath, IO, Int, Show,
+                                     String, concat, getContents, mapM_,
+                                     putStrLn, readFile, show, unlines, ($),
+                                     (++), (.), (>), (>>), (>>=))
+import           System.Environment (getArgs)
+import           System.Exit        (exitFailure)
 
-import Pepe.Abs   ()
-import Pepe.Lex   ( Token, mkPosToken )
-import Pepe.Par   ( pProgram, myLexer )
-import Pepe.Print ( Print, printTree )
-import Pepe.Skel  ()
+import           Pepe.Abs           ()
+import           Pepe.Lex           (Token, mkPosToken)
+import           Pepe.Par           (myLexer, pProgram)
+import           Pepe.Print         (Print, printTree)
+import           Pepe.Skel          ()
 
 type Err        = Either String
 type ParseFun a = [Token] -> Err a

@@ -6,8 +6,8 @@
 
 module Pepe.Skel where
 
-import Prelude (($), Either(..), String, (++), Show, show)
 import qualified Pepe.Abs
+import           Prelude  (Either (..), Show, String, show, ($), (++))
 
 type Err = Either String
 type Result = Err String
@@ -26,12 +26,12 @@ transProgram x = case x of
 transTopDef :: Show a => Pepe.Abs.TopDef' a -> Result
 transTopDef x = case x of
   Pepe.Abs.PFnDef _ type_ ident args block -> failure x
-  Pepe.Abs.PVarInit _ type_ ident expr -> failure x
-  Pepe.Abs.PVarDef _ type_ ident -> failure x
+  Pepe.Abs.PVarInit _ type_ ident expr     -> failure x
+  Pepe.Abs.PVarDef _ type_ ident           -> failure x
 
 transArg :: Show a => Pepe.Abs.Arg' a -> Result
 transArg x = case x of
-  Pepe.Abs.PArg _ type_ ident -> failure x
+  Pepe.Abs.PArg _ type_ ident    -> failure x
   Pepe.Abs.PRefArg _ type_ ident -> failure x
 
 transBlock :: Show a => Pepe.Abs.Block' a -> Result
@@ -40,60 +40,60 @@ transBlock x = case x of
 
 transStmt :: Show a => Pepe.Abs.Stmt' a -> Result
 transStmt x = case x of
-  Pepe.Abs.SEmpty _ -> failure x
-  Pepe.Abs.SBStmt _ block -> failure x
-  Pepe.Abs.STopDef _ topdef -> failure x
-  Pepe.Abs.SAss _ ident expr -> failure x
-  Pepe.Abs.SIncr _ ident -> failure x
-  Pepe.Abs.SDecr _ ident -> failure x
-  Pepe.Abs.SRet _ expr -> failure x
-  Pepe.Abs.SRetVoid _ -> failure x
-  Pepe.Abs.SCond _ expr block -> failure x
+  Pepe.Abs.SEmpty _                       -> failure x
+  Pepe.Abs.SBStmt _ block                 -> failure x
+  Pepe.Abs.STopDef _ topdef               -> failure x
+  Pepe.Abs.SAss _ ident expr              -> failure x
+  Pepe.Abs.SIncr _ ident                  -> failure x
+  Pepe.Abs.SDecr _ ident                  -> failure x
+  Pepe.Abs.SRet _ expr                    -> failure x
+  Pepe.Abs.SRetVoid _                     -> failure x
+  Pepe.Abs.SCond _ expr block             -> failure x
   Pepe.Abs.SCondElse _ expr block1 block2 -> failure x
-  Pepe.Abs.SWhile _ expr block -> failure x
-  Pepe.Abs.SBreak _ -> failure x
-  Pepe.Abs.SCont _ -> failure x
-  Pepe.Abs.SExp _ expr -> failure x
+  Pepe.Abs.SWhile _ expr block            -> failure x
+  Pepe.Abs.SBreak _                       -> failure x
+  Pepe.Abs.SCont _                        -> failure x
+  Pepe.Abs.SExp _ expr                    -> failure x
 
 transType :: Show a => Pepe.Abs.Type' a -> Result
 transType x = case x of
-  Pepe.Abs.TInt _ -> failure x
+  Pepe.Abs.TInt _    -> failure x
   Pepe.Abs.TString _ -> failure x
-  Pepe.Abs.TBool _ -> failure x
-  Pepe.Abs.TVoid _ -> failure x
+  Pepe.Abs.TBool _   -> failure x
+  Pepe.Abs.TVoid _   -> failure x
 
 transExpr :: Show a => Pepe.Abs.Expr' a -> Result
 transExpr x = case x of
-  Pepe.Abs.EVar _ ident -> failure x
-  Pepe.Abs.ELitInt _ integer -> failure x
-  Pepe.Abs.ELitTrue _ -> failure x
-  Pepe.Abs.ELitFalse _ -> failure x
-  Pepe.Abs.EApp _ ident exprs -> failure x
-  Pepe.Abs.EString _ string -> failure x
-  Pepe.Abs.ENeg _ expr -> failure x
-  Pepe.Abs.ENot _ expr -> failure x
+  Pepe.Abs.EVar _ ident             -> failure x
+  Pepe.Abs.ELitInt _ integer        -> failure x
+  Pepe.Abs.ELitTrue _               -> failure x
+  Pepe.Abs.ELitFalse _              -> failure x
+  Pepe.Abs.EApp _ ident exprs       -> failure x
+  Pepe.Abs.EString _ string         -> failure x
+  Pepe.Abs.ENeg _ expr              -> failure x
+  Pepe.Abs.ENot _ expr              -> failure x
   Pepe.Abs.EMul _ expr1 mulop expr2 -> failure x
   Pepe.Abs.EAdd _ expr1 addop expr2 -> failure x
   Pepe.Abs.ERel _ expr1 relop expr2 -> failure x
-  Pepe.Abs.EAnd _ expr1 expr2 -> failure x
-  Pepe.Abs.EOr _ expr1 expr2 -> failure x
+  Pepe.Abs.EAnd _ expr1 expr2       -> failure x
+  Pepe.Abs.EOr _ expr1 expr2        -> failure x
 
 transAddOp :: Show a => Pepe.Abs.AddOp' a -> Result
 transAddOp x = case x of
-  Pepe.Abs.OPlus _ -> failure x
+  Pepe.Abs.OPlus _  -> failure x
   Pepe.Abs.OMinus _ -> failure x
 
 transMulOp :: Show a => Pepe.Abs.MulOp' a -> Result
 transMulOp x = case x of
   Pepe.Abs.OTimes _ -> failure x
-  Pepe.Abs.ODiv _ -> failure x
-  Pepe.Abs.OMod _ -> failure x
+  Pepe.Abs.ODiv _   -> failure x
+  Pepe.Abs.OMod _   -> failure x
 
 transRelOp :: Show a => Pepe.Abs.RelOp' a -> Result
 transRelOp x = case x of
   Pepe.Abs.OLth _ -> failure x
-  Pepe.Abs.OLE _ -> failure x
+  Pepe.Abs.OLE _  -> failure x
   Pepe.Abs.OGth _ -> failure x
-  Pepe.Abs.OGE _ -> failure x
-  Pepe.Abs.OEq _ -> failure x
-  Pepe.Abs.ONe _ -> failure x
+  Pepe.Abs.OGE _  -> failure x
+  Pepe.Abs.OEq _  -> failure x
+  Pepe.Abs.ONe _  -> failure x
