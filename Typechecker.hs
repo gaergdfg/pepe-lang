@@ -209,8 +209,7 @@ instance Typechecker TopDef where
 
 instance Typechecker Block where
 
-    checkType expectedType (SBlock pos stmts) = do
-        mapM_ (checkType expectedType) stmts
+    checkType expectedType (SBlock pos stmts) = mapM_ (checkType expectedType) stmts
 
 
 instance Typechecker Stmt where
