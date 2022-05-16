@@ -82,7 +82,7 @@ instance Show TypecheckException where
         concat
         [ "Error - invalid attempt to call a variable of type: "
         , show rawType
-        , " at: "
+        , ", at: "
         , showPos pos
         ]
 
@@ -125,7 +125,7 @@ instance Show TypecheckException where
         concat
         [ "Error - undefined symbol: "
         , show name
-        , " at: "
+        , ", at: "
         , showPos pos
         ]
 
